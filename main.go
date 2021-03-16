@@ -14,7 +14,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/errwrap"
-	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-gcp-common/gcputil"
 	"github.com/hashicorp/vault/sdk/helper/useragent"
 	"golang.org/x/oauth2"
@@ -66,14 +65,17 @@ func roleSetServiceAccountName(rsName string) (name string) {
 	}
 	return name
 }
+
 func HTTPClient() (*http.Client, error) {
 	creds, err := credentials()
 	if err != nil {
 		return nil, fmt.Errorf("Error from credentials(): {{%s}}", err)
 	}
 
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, cleanhttp.DefaultClient())
-
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, &http.Client{
+		Transport: &logTransport{http.DefaultTransport},
+	})
+	//creds.TokenSource.SetAuthHeader()
 	client := oauth2.NewClient(ctx, creds.TokenSource)
 
 	return client, nil
